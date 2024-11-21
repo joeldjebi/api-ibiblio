@@ -83,6 +83,7 @@ class CategorieController extends Controller
         $livres = Livre::where([
             'statut' => 1,
             'categorie_id' => $request->categorie_id,
+            'pays_id' => $user->pays_id
         ])
         ->with(['auteur', 'type_publication', 'categorie', 'editeur', 'langue', 'createdBy'])
         ->get();

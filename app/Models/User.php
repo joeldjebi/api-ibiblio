@@ -20,6 +20,7 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'email',
         'password',
+        'wallet',
     ];
 
     /**
@@ -58,4 +59,19 @@ class User extends Authenticatable implements JWTSubject
     public function getJWTCustomClaims() {
         return [];
     }  
+
+    // Relation avec les livres achetés (table pivot `wallet_transactions`)
+    public function wallet_transaction()
+    {
+        return $this->belongsToMany(Livre::class, 'wallet_transactions', 'user_id', 'livre_id')
+            ->withPivot('montant', 'type_transaction', 'date_transaction')
+            ->withTimestamps();
+    }
+
+    // Relation avec les abonnements
+    public function abonnements()
+    {
+        return $this->hasMany(Abonnement::class, 'user_id');
+    }
+
 }

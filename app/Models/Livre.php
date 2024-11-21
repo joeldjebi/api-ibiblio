@@ -9,6 +9,11 @@ class Livre extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'titre',
+        'amount',
+    ];
+
     public function auteur( )
     {
         return $this->belongsTo(Auteur::class, 'auteur_id');
@@ -37,6 +42,14 @@ class Livre extends Model
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    // Relation avec les utilisateurs via les transactions
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'wallet_transactions', 'livre_id', 'user_id')
+            ->withPivot('montant', 'type_transaction', 'date_transaction')
+            ->withTimestamps();
     }
 
 }

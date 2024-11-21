@@ -34,7 +34,7 @@ class AuthController extends Controller
         $this->middleware('auth:api', ['except' => [
             'login', 'register', 'verifyNumberExist', 'verifyOtp', 
             'verifyNumberPasswordForget', 'passwordForgetUpdate',
-            'verifyOtpPasswordForget'
+            'verifyOtpPasswordForget','indexPaysAll'
         ]]);
     }
 
@@ -173,6 +173,33 @@ class AuthController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
+    // public function login(Request $request)
+    // {
+    //     // Récupération des données d'authentification
+    //     $credentials = $request->only(['mobile', 'password', 'indicatif']);
+        
+    //     // Enlever l'indicatif pour obtenir uniquement le numéro de téléphone
+    //     $mobileWithoutIndicatif = $credentials['mobile']; // Numéro sans l'indicatif
+    //     $user = User::where('mobile', $mobileWithoutIndicatif)->first(); // Recherche sans l'indicatif
+    
+    //     // Vérifier si l'utilisateur existe et comparer le mot de passe
+    //     if ($user && Hash::check($request->password, $user->password)) {
+    //         // Authentification réussie
+    //         $token = JWTAuth::fromUser($user);
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Utilisateur authentifié avec succès.',
+    //             'access_token' => $token,
+    //             'user' => $user,
+    //         ]);
+    //     }
+    
+    //     return response()->json([
+    //         'success' => false,
+    //         'message' => 'Identifiants incorrects. Veuillez vérifier votre numéro et votre mot de passe.',
+    //     ], 401);
+    // }
+    
     public function login(Request $request)
     {
         // Récupération des données d'authentification
@@ -181,25 +208,29 @@ class AuthController extends Controller
         // Enlever l'indicatif pour obtenir uniquement le numéro de téléphone
         $mobileWithoutIndicatif = $credentials['mobile']; // Numéro sans l'indicatif
         $user = User::where('mobile', $mobileWithoutIndicatif)->first(); // Recherche sans l'indicatif
-    
+
         // Vérifier si l'utilisateur existe et comparer le mot de passe
         if ($user && Hash::check($request->password, $user->password)) {
             // Authentification réussie
             $token = JWTAuth::fromUser($user);
+
+            // Calculer l'heure d'expiration du token
+            $expirationTime = now()->addMinutes(config('jwt.ttl'))->timestamp;
+
             return response()->json([
                 'success' => true,
                 'message' => 'Utilisateur authentifié avec succès.',
-                'token' => $token,
+                'access_token' => $token,
+                'expiration_time' => $expirationTime, // Date d'expiration
                 'user' => $user,
             ]);
         }
-    
+
         return response()->json([
             'success' => false,
             'message' => 'Identifiants incorrects. Veuillez vérifier votre numéro et votre mot de passe.',
         ], 401);
     }
-    
 
     /**
      * Register a User.
@@ -274,12 +305,17 @@ class AuthController extends Controller
     
     public function updateUser(Request $request, $id)
     {
-        // dd($request->all());
+        // Vérifier si l'email a été modifié
+        $emailRule = 'nullable|email';
+        if ($request->filled('email') && $request->email !== User::find($id)->email) {
+            $emailRule = 'nullable|email|unique:users,email,' . $id;
+        }
+    
         // Valider les données de la requête
         $validator = Validator::make($request->all(), [
             'nom' => 'nullable|string|max:255',
             'prenoms' => 'nullable|string|max:255',
-            'email' => 'nullable|email|unique:users,email,' . $id,
+            'email' => $emailRule,
             'pays_id' => 'nullable|exists:pays,id',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Avatar (image)
         ]);
@@ -348,6 +384,7 @@ class AuthController extends Controller
             ], 500);
         }
     }
+    
     
     public function updatePassword(Request $request, $id)
     {

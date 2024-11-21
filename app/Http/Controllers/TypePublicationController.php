@@ -83,6 +83,7 @@ class TypePublicationController extends Controller
         $livres = Livre::where([
             'statut' => 1,
             'type_publication_id' => $request->type_publication_id,
+            'pays_id' => $user->pays_id
         ])
         ->with(['auteur', 'type_publication', 'categorie', 'editeur', 'langue', 'createdBy'])
         ->get();
